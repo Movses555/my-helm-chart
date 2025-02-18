@@ -17,6 +17,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Enable Helm OCI Support
+        run: echo "export HELM_EXPERIMENTAL_OCI=1" >> $GITHUB_ENV
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -30,9 +33,17 @@ jobs:
         run: |
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-      - name: Enable Helm OCI Support
-        run: echo "export HELM_EXPERIMENTAL_OCI=1" >> $GITHUB_ENV
+      - name: Authenticate with AWS ECR
+        run: |
+          ECR_REGISTRY="654654428802.dkr.ecr.us-east-1.amazonaws.com"
+          aws ecr get-login-password --region us-east-1 | helm registry login $ECR_REGISTRY --username AWS --password-stdin
 
+      - name: Extract Helm Chart Version
+        run: |
+          CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
+          echo "CHART_VERSION=$CHART_VERSION" >> $GITHUB_ENV
+          echo "Extracted Chart Version: $CHART_VERSION"
+          
       - name: Package Helm Chart
         run: |
          cd $GITHUB_WORKSPACE/
@@ -44,12 +55,10 @@ jobs:
           echo "Logging into ECR: $ECR_REPO"
           echo ${{ steps.ecr-login.outputs.registry }} | sed 's/^https:\/\///' | xargs -I {} helm registry login {} --username AWS --password $(aws ecr get-login-password --region us-east-1)
 
-      - name: Push Helm Chart to Private ECR
+      - name: Push Helm Chart to Amazon ECR
         run: |
-          CHART_NAME=my-helm-chart
-          CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
-          CHART_PATH="./helm-packaged/${CHART_NAME}-${CHART_VERSION}.tgz"
-          ECR_REPO="654654428802.dkr.ecr.us-east-1.amazonaws.com/my-helm-chart"
+          ECR_REPO="oci://654654428802.dkr.ecr.us-east-1.amazonaws.com/my-helm-chart"
+          CHART_FILE=$(ls ./helm-packaged/*.tgz)
 
-          echo "Pushing chart $CHART_NAME version $CHART_VERSION to private ECR $ECR_REPO"
-          helm push $CHART_PATH oci://$ECR_REPO
+          echo "Pushing Helm chart: $CHART_FILE to $ECR_REPO"
+          helm push $CHART_FILE $ECR_REPO

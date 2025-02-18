@@ -35,8 +35,8 @@ jobs:
 
       - name: Package Helm Chart
         run: |
-          helm package charts/mychart -d ./helm-packaged
-          ls -lah ./helm-packaged
+         cd $GITHUB_WORKSPACE/my-helm-chart/my-helm-chart
+         helm package . -d ./helm-packaged
 
       - name: Authenticate Helm with Private ECR
         run: |

@@ -57,7 +57,7 @@ jobs:
 
       - name: Push Helm Chart to Amazon ECR
         run: |
-          ECR_REPO="oci://654654428802.dkr.ecr.us-east-1.amazonaws.com/my-helm-chart"
+          ECR_REPO="oci://654654428802.dkr.ecr.us-east-1.amazonaws.com/"
           CHART_FILE=$(ls ./helm-packaged/*.tgz)
 
           echo "Pushing Helm chart: $CHART_FILE to $ECR_REPO"

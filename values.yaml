@@ -7,5 +7,7 @@ image:
 
 service:
   type: NodePort
-  nodePort: 30080
+  nodePort: 31600
+  targetPort: 80
   port: 80
+

@@ -49,7 +49,7 @@ jobs:
           CHART_NAME=my-helm-chart
           CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
           CHART_PATH="./helm-packaged/${CHART_NAME}-${CHART_VERSION}.tgz"
-          ECR_REPO="${{ steps.ecr-login.outputs.registry }}/helm-repo"
+          ECR_REPO="654654428802.dkr.ecr.us-east-1.amazonaws.com/my-helm-chart"
 
           echo "Pushing chart $CHART_NAME version $CHART_VERSION to private ECR $ECR_REPO"
           helm push $CHART_PATH oci://$ECR_REPO

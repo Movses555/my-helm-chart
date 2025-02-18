@@ -47,7 +47,7 @@ jobs:
       - name: Push Helm Chart to Private ECR
         run: |
           CHART_NAME=my-helm-chart
-          CHART_VERSION=$(helm show chart charts/mychart | grep '^version:' | awk '{print $2}')
+          CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
           CHART_PATH="./helm-packaged/${CHART_NAME}-${CHART_VERSION}.tgz"
           ECR_REPO="${{ steps.ecr-login.outputs.registry }}/helm-repo"
 

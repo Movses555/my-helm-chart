@@ -11,7 +11,7 @@ permissions:
 jobs:
   helm-publish:
     name: Package & Push Helm Chart
-    runs-on: [self-hosted, my-custom-runner]  # 👈 Use your EC2 runner label
+    runs-on: [self-hosted, my-custom-runner]
 
     steps:
       - name: Checkout Repository

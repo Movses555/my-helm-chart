@@ -1,0 +1,57 @@
+name: Push Helm Chart to Private ECR
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  helm-publish:
+    name: Package & Push Helm Chart
+    runs-on: [self-hosted, my-custom-runner]  # 👈 Use your EC2 runner label
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::654654428802:role/github-runner-role
+          role-session-name: GitHubActionsSession
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Enable Helm OCI Support
+        run: echo "export HELM_EXPERIMENTAL_OCI=1" >> $GITHUB_ENV
+
+      - name: Package Helm Chart
+        run: |
+          helm package charts/mychart -d ./helm-packaged
+          ls -lah ./helm-packaged
+
+      - name: Authenticate Helm with Private ECR
+        run: |
+          ECR_REPO="${{ steps.ecr-login.outputs.registry }}/helm-repo"
+          echo "Logging into ECR: $ECR_REPO"
+          echo ${{ steps.ecr-login.outputs.registry }} | sed 's/^https:\/\///' | xargs -I {} helm registry login {} --username AWS --password $(aws ecr get-login-password --region us-east-1)
+
+      - name: Push Helm Chart to Private ECR
+        run: |
+          CHART_NAME=my-helm-chart
+          CHART_VERSION=$(helm show chart charts/mychart | grep '^version:' | awk '{print $2}')
+          CHART_PATH="./helm-packaged/${CHART_NAME}-${CHART_VERSION}.tgz"
+          ECR_REPO="${{ steps.ecr-login.outputs.registry }}/helm-repo"
+
+          echo "Pushing chart $CHART_NAME version $CHART_VERSION to private ECR $ECR_REPO"
+          helm push $CHART_PATH oci://$ECR_REPO
